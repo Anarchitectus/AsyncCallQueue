@@ -9,7 +9,14 @@ project ("AsyncCallQueue")
 
 cmake_minimum_required (VERSION 3.8)
 
+
+
 add_executable (TestAsyncCallQueue "TestAsyncCallQueue.cpp")
+IF (WIN32)
+  # set stuff for windows
+ELSE()
+  target_link_libraries(TestAsyncCallQueue pthread)
+ENDIF()
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
   set_property(TARGET TestAsyncCallQueue PROPERTY CXX_STANDARD 20)

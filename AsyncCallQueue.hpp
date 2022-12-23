@@ -26,13 +26,13 @@ namespace arc
 
         AsyncInvokable() : _inner(nullptr) {};
 
-        bool invoke() { if (_inner == nullptr) return false; return _inner->invoke(); };
+        bool invoke() const { if (_inner == nullptr) return false; return _inner->invoke(); };
 
-        void wait() { if (_inner == nullptr) return; _inner->wait(); };
+        void wait() const{ if (_inner == nullptr) return; _inner->wait(); };
 
         struct innerAsyncInvokableBase
         {
-            virtual ~innerAsyncInvokableBase() {};
+            virtual ~innerAsyncInvokableBase() = default;
             virtual bool invoke() = 0;
             virtual void wait() = 0;
         };
@@ -40,7 +40,7 @@ namespace arc
         template <typename TRet, typename TFunc, typename... TArgs>
         struct innerAsyncInvokable : innerAsyncInvokableBase {
 
-            template <typename TFunc, typename... TArgs, typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
+            template <typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
             innerAsyncInvokable(std::future<typename std::invoke_result<TFunc, TArgs...>::type>& ret, TFunc&& func, TArgs&&... args) :
                 _func(std::forward<TFunc>(func)),
                 _args(std::forward_as_tuple(std::forward<TArgs>(args)...))
@@ -84,7 +84,6 @@ namespace arc
         template <typename TRet, typename TFunc, typename TInst, typename... TArgs>
         struct innerAsyncInvokableMember : innerAsyncInvokableBase {
 
-            template <typename TFunc, typename TInst, typename... TArgs>
             innerAsyncInvokableMember(std::future<typename std::invoke_result<TFunc, TInst, TArgs...>::type>& ret, TFunc&& func, TInst&& inst, TArgs&&... args) :
                 _func(std::forward<TFunc>(func)),
                 _args(std::forward_as_tuple(std::forward<TInst>(inst), std::forward<TArgs>(args)...))
@@ -127,4 +126,4 @@ namespace arc
         std::unique_ptr<innerAsyncInvokableBase> _inner;
     };
 }
-#endif //ARC_INVOKABLE_H
+#endif //ARC_ASYNC_INVOKABLE_H
