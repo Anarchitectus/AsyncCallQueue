@@ -1,4 +1,4 @@
-#ifndef ARC_ASYNC_INVOKABLE_H
+﻿#ifndef ARC_ASYNC_INVOKABLE_H
 #define ARC_ASYNC_INVOKABLE_H
 
 #include <functional>
@@ -52,14 +52,21 @@ namespace arc
             {
                 if (_func == nullptr) return false;
 
-                if constexpr (std::is_same<void, TRet>::value)
+                try
                 {
-                    std::apply(std::move(_func), std::move(_args));
-                    _retval.set_value();
+                    if constexpr (std::is_same<void, TRet>::value)
+                    {
+                        std::apply(std::move(_func), std::move(_args));
+                        _retval.set_value();
+                    }
+                    else
+                    {
+                        _retval.set_value(std::apply(std::move(_func), std::move(_args)));
+                    }
                 }
-                else
+                catch (...)
                 {
-                    _retval.set_value(std::apply(std::move(_func), std::move(_args)));
+                    _retval.set_exception(std::current_exception());
                 }
 
                 _func = nullptr; //we can only invoke once
@@ -67,7 +74,7 @@ namespace arc
                 return true;
             }
 
-            void wait() override{_retval.get_future().get();}
+            void wait() override { _retval.get_future().get(); }
 
             std::function<TRet(TArgs...)> _func;
             std::tuple<TArgs...> _args;
@@ -88,15 +95,21 @@ namespace arc
             bool invoke() override
             {
                 if (_func == nullptr) return false;
-
-                if constexpr (std::is_same<void, TRet>::value)
+                try
                 {
-                    std::apply(std::move(_func), std::move(_args));
-                    _retval.set_value();
+                    if constexpr (std::is_same<void, TRet>::value)
+                    {
+                        std::apply(std::move(_func), std::move(_args));
+                        _retval.set_value();
+                    }
+                    else
+                    {
+                        _retval.set_value(std::apply(std::move(_func), std::move(_args)));
+                    }
                 }
-                else
+                catch (...)
                 {
-                    _retval.set_value(std::apply(std::move(_func), std::move(_args)));
+                    _retval.set_exception(std::current_exception());
                 }
 
                 _func = nullptr;
@@ -104,7 +117,7 @@ namespace arc
                 return true;
             }
 
-            void wait() override{_retval.get_future().get();}
+            void wait() override { _retval.get_future().get(); }
 
             std::function<TRet(TInst&, TArgs...) > _func;
             std::tuple<TInst, TArgs...> _args;

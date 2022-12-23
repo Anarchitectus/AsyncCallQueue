@@ -1,4 +1,4 @@
-﻿#ifndef ARC_ASYNC_CALL_QUEUE_H
+#ifndef ARC_ASYNC_CALL_QUEUE_H
 #define ARC_ASYNC_CALL_QUEUE_H
 
 #include "ConcurrentDeque.hpp"
@@ -20,7 +20,7 @@ public:
         _exitRunner = true;
         void (*terminateToken) (void) = nullptr;
         auto ret = enqueue(terminateToken);
-   
+
         _runner.join();
     }
 
@@ -37,7 +37,7 @@ public:
     [[nodiscard]] std::future<typename std::invoke_result<TFunc, Tinst, TArgs...>::type> enqueue(TFunc&& func, Tinst&& inst, TArgs&&... args)
     {
         std::future<typename std::invoke_result<TFunc, Tinst, TArgs...>::type> fut;
-        T elem{ fut, std::forward<TFunc>( func), std::forward<Tinst>(inst) , std::forward<TArgs>(args)...};
+        T elem{ fut, std::forward<TFunc>(func), std::forward<Tinst>(inst) , std::forward<TArgs>(args)... };
         _concurrentDeque.push(std::move(elem));
         return fut;
     };
