@@ -1,5 +1,4 @@
-﻿#include "AsyncInvokable.hpp"
-#include "AsyncCallQueue.hpp"
+﻿#include "AsyncCallQueue.hpp"
 #include "TestHeader.h"
 
 using namespace arc;
@@ -80,7 +79,7 @@ int main()
     int cap = 3;
     AsyncInvokable  lambda_void_int{ ret_void ,[cap](int a) {std::cout << "message " << std::to_string(a + cap); },1 };
     lambda_void_int.invoke();
-    AsyncCallQueue<AsyncInvokable> queue(20);
+    AsyncCallQueue queue(20);
     ret_copiable = queue.enqueue(&NotCopiable::mem_copiable_void, (nc));
     ret_void = queue.enqueue(gbl_void_void);
     ret_void = queue.enqueue(gbl_void_int_throw, 0);
