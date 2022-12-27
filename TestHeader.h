@@ -9,6 +9,8 @@ std::string _message = "global";
 
 void gbl_void_void() { std::cout << _message << " gbl_void_void" << std::endl; };
 int gbl_int_int(int a) { std::cout << _message << " gbl_int_int" << std::endl; return a; };
+int gbl_int_int_ref(int& a) { std::cout << _message << " gbl_int_int" << std::endl; a += 5; return a; };
+
 void gbl_void_int(int a) { std::cout << _message << " gbl_void_int" << std::endl; };
 void gbl_void_copiable(Copiable nc) { _message = _message; std::cout << _message << " gbl_void_copiable" << std::endl; };
 void gbl_void_const_copiable(const Copiable nc) { _message = _message; std::cout << _message << " gbl_void_const_copiable" << std::endl; };

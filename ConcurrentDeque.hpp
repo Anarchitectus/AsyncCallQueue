@@ -111,16 +111,6 @@ class ConcurrentDeque {
         return rc;
     }
 
-    std::optional<T> try_back()
-    {
-        {
-            auto lock{ std::scoped_lock(_mutex) };
-            if (_deque.empty()) { return std::nullopt; }
-            T rc{ std::move(_deque.back()) };
-            return rc;
-        }    
-    }
-
     std::optional<T> try_pop()
     {
         auto lock{ std::unique_lock(_mutex) };

@@ -1,70 +1,134 @@
-#ifndef ARC_ASYNC_CALL_QUEUE_H
-#define ARC_ASYNC_CALL_QUEUE_H
+﻿#ifndef ARC_ASYNC_INVOKABLE_H
+#define ARC_ASYNC_INVOKABLE_H
 
-#include "ConcurrentDeque.hpp"
+#include <functional>
 #include <future>
 
-template<typename T>
-class AsyncCallQueue
+namespace arc
 {
-public:
-    AsyncCallQueue(size_t lim) :
-        _exitRunner(false),
-        _lim(lim),
-        _concurrentDeque(lim),
-        _runner(&AsyncCallQueue::run, this)
-    {};
+    struct AsyncInvokable {
 
-    ~AsyncCallQueue()
-    {
-        _exitRunner = true;
-        void (*terminateToken) (void) = nullptr;
-        auto ret = enqueue(terminateToken);
+        AsyncInvokable(const AsyncInvokable& o) = delete;
 
-        _runner.join();
-    }
+        AsyncInvokable& operator=(const AsyncInvokable& other) = delete;
 
-    template <typename TFunc, typename... TArgs, typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
-    [[nodiscard]] std::future<typename std::invoke_result<TFunc, TArgs...>::type> enqueue(TFunc&& func, TArgs&&... args)
-    {
-        std::future<typename std::invoke_result<TFunc, TArgs...>::type> fut;
-        T elem{ fut, std::forward<TFunc>(func), std::forward<TArgs>(args)... };
-        _concurrentDeque.push(std::move(elem));
-        return fut;
-    };
+        AsyncInvokable(AsyncInvokable&& o) = default;
 
-    template <typename TFunc, typename Tinst, typename... TArgs, typename = std::enable_if_t<std::is_member_function_pointer<TFunc>::value>>
-    [[nodiscard]] std::future<typename std::invoke_result<TFunc, Tinst, TArgs...>::type> enqueue(TFunc&& func, Tinst&& inst, TArgs&&... args)
-    {
-        std::future<typename std::invoke_result<TFunc, Tinst, TArgs...>::type> fut;
-        T elem{ fut, std::forward<TFunc>(func), std::forward<Tinst>(inst) , std::forward<TArgs>(args)... };
-        _concurrentDeque.push(std::move(elem));
-        return fut;
-    };
+        AsyncInvokable& operator=(AsyncInvokable&& other) = default;
 
-    void sync()
-    {
-        if (_concurrentDeque.size() == 0) return;
-        std::function marker = []() -> int {return 1; };
-        this->enqueue(marker).get();
-    }
+        template <typename TFunc, typename... TArgs, typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
+        AsyncInvokable(std::future<typename std::invoke_result<TFunc, TArgs...>::type>& ret, TFunc&& func, TArgs&&... args) :
+            _inner(std::make_unique<innerAsyncInvokable<typename std::invoke_result<TFunc, TArgs...>::type, TFunc, TArgs...>>(ret, std::forward <TFunc>(func), std::forward<TArgs>(args)...)) {};
 
-private:
+        template <typename TFunc, typename TInst, typename... TArgs, typename = std::enable_if_t<std::is_member_function_pointer<TFunc>::value>>
+        AsyncInvokable(std::future<typename std::invoke_result<TFunc, TInst, TArgs...>::type>& ret, TFunc&& func, TInst&& inst, TArgs&&... args) :
+            _inner(std::make_unique<innerAsyncInvokableMember<typename std::invoke_result<TFunc, TInst, TArgs...>::type, TFunc, TInst, TArgs...>>(ret, std::forward<TFunc>(func), std::forward<TInst>(inst), std::forward<TArgs>(args)...)) {};
 
-    void run()
-    {
-        for (;;)
+        AsyncInvokable() : _inner(nullptr) {};
+
+        bool invoke() const { if (_inner == nullptr) return false; return _inner->invoke(); };
+
+        void wait() const{ if (_inner == nullptr) return; _inner->wait(); };
+
+        struct innerAsyncInvokableBase
         {
-            T elem{ _concurrentDeque.pop() };
-            bool isInvoked = elem.invoke();
-            if (_exitRunner && !isInvoked) return;
-        }
-    }
+            virtual ~innerAsyncInvokableBase() = default;
+            virtual bool invoke() = 0;
+            virtual void wait() = 0;
+        };
 
-    bool _exitRunner;
-    size_t _lim;
-    ConcurrentDeque<T> _concurrentDeque;
-    std::thread _runner;
-};
+        template <typename TRet, typename TFunc, typename... TArgs>
+        struct innerAsyncInvokable : innerAsyncInvokableBase {
 
-#endif
+            template <typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
+            innerAsyncInvokable(std::future<typename std::invoke_result<TFunc, TArgs...>::type>& ret, TFunc&& func, TArgs&&... args) :
+                _func(std::forward<TFunc>(func)),
+                _args(std::forward_as_tuple(std::forward<TArgs>(args)...))
+            {
+                ret = _retval.get_future();
+            };
+
+            bool invoke() override
+            {
+                bool invoked = false;
+                if (_func == nullptr) return invoked;
+
+                try
+                {
+                    if constexpr (std::is_same<void, TRet>::value)
+                    {
+                        std::apply(std::move(_func), std::move(_args));
+                        _retval.set_value();
+                    }
+                    else
+                    {
+                        _retval.set_value(std::apply(std::move(_func), std::move(_args)));
+                    }
+                    invoked = true;
+                }
+                catch (...)
+                {
+                    _retval.set_exception(std::current_exception());
+                }
+
+                _func = nullptr; //we can only invoke once
+
+                return invoked;
+            }
+
+            void wait() override { _retval.get_future().get(); }
+
+            std::function<TRet(TArgs...)> _func;
+            std::tuple<TArgs...> _args;
+            std::promise<TRet> _retval;
+        };
+
+        template <typename TRet, typename TFunc, typename TInst, typename... TArgs>
+        struct innerAsyncInvokableMember : innerAsyncInvokableBase {
+
+            innerAsyncInvokableMember(std::future<typename std::invoke_result<TFunc, TInst, TArgs...>::type>& ret, TFunc&& func, TInst&& inst, TArgs&&... args) :
+                _func(std::forward<TFunc>(func)),
+                _args(std::forward_as_tuple(std::forward<TInst>(inst), std::forward<TArgs>(args)...))
+            {
+                ret = _retval.get_future();
+            };
+
+            bool invoke() override
+            {
+                bool invoked = false;
+                if (_func == nullptr) return invoked;
+                try
+                {
+                    if constexpr (std::is_same<void, TRet>::value)
+                    {
+                        std::apply(std::move(_func), std::move(_args));
+                        _retval.set_value();
+                    }
+                    else
+                    {
+                        _retval.set_value(std::apply(std::move(_func), std::move(_args)));
+                    }
+
+                    invoked = true;
+                }
+                catch (...)
+                {
+                    _retval.set_exception(std::current_exception());
+                }
+
+                _func = nullptr;
+
+                return invoked;
+            }
+
+            void wait() override { _retval.get_future().get(); }
+
+            std::function<TRet(TInst&, TArgs...) > _func;
+            std::tuple<TInst, TArgs...> _args;
+            std::promise<TRet> _retval;
+        };
+
+        std::unique_ptr<innerAsyncInvokableBase> _inner;
+    };
+}
+#endif //ARC_ASYNC_INVOKABLE_H

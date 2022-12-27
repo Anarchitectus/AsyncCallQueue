@@ -7,6 +7,8 @@ using namespace arc;
 int main()
 {
     int iarg = 1;
+    int iarg2 = 1;
+    int& iarg2_ref = iarg2;
     NotCopiable nc, nc2;
     Copiable c, c2, c3;
     std::future<void> ret_void;
@@ -66,6 +68,7 @@ int main()
 
     AsyncInvokable f_gbl_void_void{ ret_void,gbl_void_void }; f_gbl_void_void.invoke();
     AsyncInvokable f_gbl_void_int{ ret_void,gbl_void_int,iarg }; f_gbl_void_int.invoke();
+    AsyncInvokable f_gbl_void_int_ref{ ret_int,gbl_int_int_ref,iarg2_ref }; f_gbl_void_int_ref.invoke();
     AsyncInvokable f_gbl_int_int{ ret_int,gbl_int_int,iarg }; f_gbl_int_int.invoke();
     AsyncInvokable f_gbl_void_notCopiable{ ret_void,gbl_void_notCopiable,std::move(nc2) };
     f_gbl_void_notCopiable.invoke();
@@ -78,10 +81,11 @@ int main()
     AsyncInvokable  lambda_void_int{ ret_void ,[cap](int a) {std::cout << "message " << std::to_string(a + cap); },1 };
     lambda_void_int.invoke();
     AsyncCallQueue<AsyncInvokable> queue(20);
-    //ret_copiable = queue.enqueue(&NotCopiable::mem_copiable_void, (nc));
-   // ret_void = queue.enqueue(gbl_void_void);
+    ret_copiable = queue.enqueue(&NotCopiable::mem_copiable_void, (nc));
+    ret_void = queue.enqueue(gbl_void_void);
     ret_void = queue.enqueue(gbl_void_int_throw, 0);
-
+    ret_int = queue.enqueue(gbl_int_int_ref, iarg2_ref);
+    int retiarg2 = ret_int.get();
     try
     {
         ret_void.get();

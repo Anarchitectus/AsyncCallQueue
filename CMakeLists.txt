@@ -7,11 +7,11 @@ project ("AsyncCallQueue")
 
 # Incluez les sous-projets.
 
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required (VERSION 3.8)  
 
 
 
-add_executable (TestAsyncCallQueue "TestAsyncCallQueue.cpp")
+add_executable (TestAsyncCallQueue TestAsyncCallQueue.cpp AsyncInvokable.hpp AsyncCallQueue.hpp)
 IF (WIN32)
   # set stuff for windows
 ELSE()
