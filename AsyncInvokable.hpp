@@ -17,12 +17,12 @@ namespace arc
         AsyncInvokable& operator=(AsyncInvokable&& other) = default;
 
         template <typename TFunc, typename... TArgs, typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
-        AsyncInvokable(std::future<typename std::invoke_result<TFunc, TArgs...>::type>& ret, TFunc&& func, TArgs&&... args) :
-            _inner(std::make_unique<innerAsyncInvokable<typename std::invoke_result<TFunc, TArgs...>::type, TFunc, TArgs...>>(ret, std::forward <TFunc>(func), std::forward<TArgs>(args)...)) {};
+        AsyncInvokable(std::future<typename std::invoke_result<TFunc, TArgs...>::type>& ret, TFunc&& func, TArgs&&... args)
+               : _inner(std::make_unique<innerAsyncInvokableGeneric<typename std::invoke_result<TFunc, TArgs...>::type, TFunc,int, TArgs...>>(ret, std::forward <TFunc>(func), std::forward<TArgs>(args)...)) {};
 
-        template <typename TFunc, typename TInst, typename... TArgs, typename = std::enable_if_t<std::is_member_function_pointer<TFunc>::value>>
-        AsyncInvokable(std::future<typename std::invoke_result<TFunc, TInst, TArgs...>::type>& ret, TFunc&& func, TInst&& inst, TArgs&&... args) :
-            _inner(std::make_unique<innerAsyncInvokableMember<typename std::invoke_result<TFunc, TInst, TArgs...>::type, TFunc, TInst, TArgs...>>(ret, std::forward<TFunc>(func), std::forward<TInst>(inst), std::forward<TArgs>(args)...)) {};
+        template <typename TMemberFunc, typename TObject, typename... TArgs, typename = std::enable_if_t<std::is_member_function_pointer<TMemberFunc>::value>>
+        AsyncInvokable(std::future<typename std::invoke_result<TMemberFunc, TObject, TArgs...>::type>& ret, TMemberFunc&& func, TObject&& inst, TArgs&&... args):
+                _inner(std::make_unique<innerAsyncInvokableGeneric<typename std::invoke_result<TMemberFunc, TObject, TArgs...>::type, TMemberFunc, TObject, TArgs...>>(0,ret, std::forward<TMemberFunc>(func), std::forward<TObject>(inst), std::forward<TArgs>(args)...)) {};
 
         AsyncInvokable() : _inner(nullptr) {};
 
@@ -37,58 +37,30 @@ namespace arc
             virtual void wait() = 0;
         };
 
-        template <typename TRet, typename TFunc, typename... TArgs>
-        struct innerAsyncInvokable : innerAsyncInvokableBase {
-
-            template <typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
-            innerAsyncInvokable(std::future<typename std::invoke_result<TFunc, TArgs...>::type>& ret, TFunc&& func, TArgs&&... args) :
-                _func(std::forward<TFunc>(func)),
-                _args(std::forward_as_tuple(std::forward<TArgs>(args)...))
-            {
-                ret = _retval.get_future();
-            };
-
-            bool invoke() override
-            {
-                bool invoked = false;
-                if (_func == nullptr) return invoked;
-
-                try
-                {
-                    if constexpr (std::is_same<void, TRet>::value)
-                    {
-                        std::apply(std::move(_func), std::move(_args));
-                        _retval.set_value();
-                    }
-                    else
-                    {
-                        _retval.set_value(std::apply(std::move(_func), std::move(_args)));
-                    }
-                    invoked = true;
-                }
-                catch (...)
-                {
-                    _retval.set_exception(std::current_exception());
-                }
-
-                _func = nullptr; //we can only invoke once
-
-                return invoked;
+        class NullFunctionCallException : public std::exception
+        {
+            public:
+            char * what () {
+                char* msg = (char*)"function pointer is nullptr";
+                return msg;
             }
-
-            void wait() override { _retval.get_future().get(); }
-
-            std::function<TRet(TArgs...)> _func;
-            std::tuple<TArgs...> _args;
-            std::promise<TRet> _retval;
         };
 
-        template <typename TRet, typename TFunc, typename TInst, typename... TArgs>
-        struct innerAsyncInvokableMember : innerAsyncInvokableBase {
+        template <typename TRet, typename TFunc, typename TObject, typename... TArgs>
+        struct innerAsyncInvokableGeneric : innerAsyncInvokableBase {
 
-            innerAsyncInvokableMember(std::future<typename std::invoke_result<TFunc, TInst, TArgs...>::type>& ret, TFunc&& func, TInst&& inst, TArgs&&... args) :
-                _func(std::forward<TFunc>(func)),
-                _args(std::forward_as_tuple(std::forward<TInst>(inst), std::forward<TArgs>(args)...))
+           innerAsyncInvokableGeneric(int dummy,std::future<TRet>& ret, TFunc&& func, TObject&& inst, TArgs&&... args
+            ) :
+                    _func(std::forward<TFunc>(func)),
+                    _args(std::forward_as_tuple(std::forward<TObject>(inst), std::forward<TArgs>(args)...))
+            {
+                ret = _retval.get_future();
+            };
+
+            innerAsyncInvokableGeneric(std::future<TRet>& ret, TFunc&& func, TArgs&&... args
+            ) :
+                    _func(std::forward<TFunc>(func)),
+                    _args(std::forward_as_tuple(std::forward<TArgs>(args)...))
             {
                 ret = _retval.get_future();
             };
@@ -96,7 +68,11 @@ namespace arc
             bool invoke() override
             {
                 bool invoked = false;
-                if (_func == nullptr) return invoked;
+                if (_func == nullptr) {
+                    _retval.set_exception(std::make_exception_ptr(NullFunctionCallException()));
+                    return invoked;
+                }
+
                 try
                 {
                     if constexpr (std::is_same<void, TRet>::value)
@@ -123,8 +99,8 @@ namespace arc
 
             void wait() override { _retval.get_future().get(); }
 
-            std::function<TRet(TInst&, TArgs...) > _func;
-            std::tuple<TInst, TArgs...> _args;
+            std::conditional_t<std::is_member_function_pointer<TFunc>::value, std::function<TRet(TObject&, TArgs...) >,std::function<TRet(TArgs...)>> _func{};
+            std::conditional_t<std::is_member_function_pointer<TFunc>::value,std::tuple<TObject, TArgs...>,std::tuple<TArgs...>> _args{};
             std::promise<TRet> _retval;
         };
 

@@ -3,23 +3,20 @@
 
 #include "AsyncInvokable.hpp"
 #include "ConcurrentDeque.hpp"
-#include <future>
+
 
 namespace arc {
-
-    template<typename T = AsyncInvokable>
     class AsyncCallQueue {
     public:
-        AsyncCallQueue(size_t lim) :
+        explicit AsyncCallQueue(size_t lim) :
                 _exitRunner(false),
                 _concurrentDeque(lim),
                 _runner(&AsyncCallQueue::run, this) {};
 
         ~AsyncCallQueue() {
+            sync();
             _exitRunner = true;
-            void (*terminateToken)() = nullptr;
-            auto ret = enqueue(terminateToken);
-
+            sync();
             _runner.join();
         }
 
@@ -27,38 +24,48 @@ namespace arc {
         [[nodiscard]] std::future<typename std::invoke_result<TFunc, TArgs...>::type>
         enqueue(TFunc &&func, TArgs &&... args) {
             std::future<typename std::invoke_result<TFunc, TArgs...>::type> fut;
-            T elem{fut, std::forward<TFunc>(func), std::forward<TArgs>(args)...};
+            AsyncInvokable elem{fut, std::forward<TFunc>(func), std::forward<TArgs>(args)...};
             _concurrentDeque.push(std::move(elem));
             return fut;
         };
 
-        template<typename TFunc, typename Tinst, typename... TArgs, typename = std::enable_if_t<std::is_member_function_pointer<TFunc>::value>>
-        [[nodiscard]] std::future<typename std::invoke_result<TFunc, Tinst, TArgs...>::type>
-        enqueue(TFunc &&func, Tinst &&inst, TArgs &&... args) {
-            std::future<typename std::invoke_result<TFunc, Tinst, TArgs...>::type> fut;
-            T elem{fut, std::forward<TFunc>(func), std::forward<Tinst>(inst), std::forward<TArgs>(args)...};
+        template<typename TMemberFunc, typename TObject, typename... TArgs, typename = std::enable_if_t<std::is_member_function_pointer<TMemberFunc>::value>>
+        [[nodiscard]] std::future<typename std::invoke_result<TMemberFunc, TObject, TArgs...>::type>
+        enqueue(TMemberFunc &&func, TObject &&inst, TArgs &&... args) {
+            std::future<typename std::invoke_result<TMemberFunc, TObject, TArgs...>::type> fut;
+            AsyncInvokable elem{fut, std::forward<TMemberFunc>(func), std::forward<TObject>(inst), std::forward<TArgs>(args)...};
             _concurrentDeque.push(std::move(elem));
             return fut;
         };
 
         void sync() {
-            if (_concurrentDeque.size() == 0) return;
-            void (*terminateToken)() = nullptr;
-            this->enqueue(terminateToken).get();
+            void (*terminateToken)(){nullptr};
+            auto retTerminate = enqueue(terminateToken);
+
+            try{
+                retTerminate.get();
+            }catch(...){}
         }
+
+        size_t size(){ return _concurrentDeque.size();};
+
+        size_t maxSize(){ return _concurrentDeque.max_size();};
 
     private:
 
         void run() {
             for (;;) {
-                T elem{_concurrentDeque.pop()};
-                bool isInvoked = elem.invoke();
-                if (_exitRunner && !isInvoked) return;
+                AsyncInvokable elem{_concurrentDeque.pop()};
+                elem.invoke();
+                if (_exitRunner)
+                {
+                    return;
+                }
             }
         }
 
         bool _exitRunner;
-        ConcurrentDeque <T> _concurrentDeque;
+        ConcurrentDeque<AsyncInvokable> _concurrentDeque;
         std::thread _runner;
     };
 }

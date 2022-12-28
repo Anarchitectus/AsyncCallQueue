@@ -46,3 +46,11 @@ Debug
 Release
 *.cmake
 x64
+
+#ninja
+
+.idea
+.ninja_deps
+.ninja_log
+Makefile
+build.ninja

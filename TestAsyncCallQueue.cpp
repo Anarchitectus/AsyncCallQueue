@@ -1,5 +1,6 @@
 ﻿#include "AsyncCallQueue.hpp"
 #include "TestHeader.h"
+#include <cassert>
 
 using namespace arc;
 
@@ -15,8 +16,9 @@ int main()
     std::future<Copiable> ret_copiable;
     std::future<NotCopiable> ret_nonCopiable;
 
+    //AsyncInvokable f_gbl_void_void{ ret_void,gbl_void_void }; f_gbl_void_void.invoke();
     //member func
-    AsyncInvokable mem_void_void{ ret_void, &Copiable::mem_void_void,(c) }; mem_void_void.invoke();
+    /*AsyncInvokable mem_void_void{ ret_void, &Copiable::mem_void_void,(c) }; mem_void_void.invoke();
     AsyncInvokable mem_int_int_rvalue{ ret_int, &Copiable::mem_int_int,(c),1 }; mem_int_int_rvalue.invoke();
     AsyncInvokable mem_int_int_lvalue{ ret_int, &Copiable::mem_int_int,(c),iarg }; mem_int_int_lvalue.invoke();
     AsyncInvokable mem_void_int{ ret_void, &Copiable::mem_void_int,(c),iarg }; mem_void_int.invoke();
@@ -78,13 +80,15 @@ int main()
     catch (std::invalid_argument& e) { std::cout << e.what(); }
     int cap = 3;
     AsyncInvokable  lambda_void_int{ ret_void ,[cap](int a) {std::cout << "message " << std::to_string(a + cap); },1 };
-    lambda_void_int.invoke();
+    lambda_void_int.invoke();*/
     AsyncCallQueue queue(20);
     ret_copiable = queue.enqueue(&NotCopiable::mem_copiable_void, (nc));
     ret_void = queue.enqueue(gbl_void_void);
-    ret_void = queue.enqueue(gbl_void_int_throw, 0);
+    ret_void = queue.enqueue(gbl_void_int_throw_if_0, 0);
     ret_int = queue.enqueue(gbl_int_int_ref, iarg2_ref);
     int retiarg2 = ret_int.get();
+    assert(retiarg2 == iarg2_ref);
+
     try
     {
         ret_void.get();
@@ -94,7 +98,7 @@ int main()
         std::cout << e.what();
     }
 
-    Copiable ccccc = ret_copiable.get();
+    ret_copiable.get();
 
     return 0;
 }

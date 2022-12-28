@@ -9,7 +9,9 @@ project ("AsyncCallQueue")
 
 cmake_minimum_required (VERSION 3.8)  
 
-
+#SET(CMAKE_BUILD_TYPE Debug)
+SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
+#SET(CMAKE_CXX_COMPILER c++)
 
 add_executable (TestAsyncCallQueue TestAsyncCallQueue.cpp AsyncInvokable.hpp AsyncCallQueue.hpp)
 IF (WIN32)
@@ -19,5 +21,5 @@ ELSE()
 ENDIF()
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET TestAsyncCallQueue PROPERTY CXX_STANDARD 20)
+ set_property(TARGET TestAsyncCallQueue PROPERTY CXX_STANDARD 20)
 endif()

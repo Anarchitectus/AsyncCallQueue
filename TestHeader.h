@@ -20,10 +20,11 @@ void gbl_void_copiable_rvalue_ref(Copiable&& nc) { _message = _message; std::cou
 void gbl_void_const_copiable_rvalue_ref(const Copiable&& nc) { _message = _message; std::cout << _message << " gbl_void_const_copiable_rvalue_ref" << std::endl; };
 void gbl_void_notCopiable(NotCopiable nc) { _message = _message; std::cout << _message << " gbl_void_copiable" << std::endl; };
 
-void gbl_void_int_throw(int i) {
+void gbl_void_int_throw_if_0(int i) {
+    std::cout << _message << " gbl_void_int_throw_if_0" << std::endl;
 	if (i == 0)
-		throw std::invalid_argument("0 arg");
-	std::cout << _message << " gbl_void_int_throw" << std::endl;
+		throw std::invalid_argument("gbl_void_int_throw_if_0 arg is equal to 0");
+
 };
 
 #endif
