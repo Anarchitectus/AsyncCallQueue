@@ -8,7 +8,7 @@
 namespace arc {
     class AsyncCallQueue {
     public:
-        explicit AsyncCallQueue(size_t lim) :
+        explicit AsyncCallQueue(size_t lim = std::numeric_limits<size_t>::max()) :
                 _exitRunner(false),
                 _concurrentDeque(lim),
                 _runner(&AsyncCallQueue::run, this) {};
@@ -39,11 +39,11 @@ namespace arc {
         };
 
         void sync() {
-            void (*terminateToken)(){nullptr};
-            auto retTerminate = enqueue(terminateToken);
+            void (*syncTok)(){nullptr};
+            auto retSyncTok = enqueue(syncTok);
 
             try{
-                retTerminate.get();
+                retSyncTok.get();
             }catch(...){}
         }
 

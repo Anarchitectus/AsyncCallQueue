@@ -13,7 +13,7 @@ class ConcurrentDeque {
 
     ConcurrentDeque() = default;
 
-    explicit ConcurrentDeque(size_t maxSize) :_maxSize(maxSize){};
+    explicit ConcurrentDeque(size_t maxSize = std::numeric_limits<size_t>::max()) :_maxSize(maxSize){};
 
     ConcurrentDeque(const ConcurrentDeque& other) 
     {

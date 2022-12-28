@@ -67,10 +67,13 @@ namespace arc
 
             bool invoke() override
             {
-                bool invoked = false;
-                if (_func == nullptr) {
+                if(_invoked) return _invoked; //only one invokation
+
+                if (_func == nullptr)
+                {
+                    _invoked = true;
                     _retval.set_exception(std::make_exception_ptr(NullFunctionCallException()));
-                    return invoked;
+                    return _invoked;
                 }
 
                 try
@@ -84,24 +87,24 @@ namespace arc
                     {
                         _retval.set_value(std::apply(std::move(_func), std::move(_args)));
                     }
-
-                    invoked = true;
                 }
                 catch (...)
                 {
                     _retval.set_exception(std::current_exception());
                 }
 
+                _invoked = true;
                 _func = nullptr;
 
-                return invoked;
+                return true;
             }
 
             void wait() override { _retval.get_future().get(); }
 
             std::conditional_t<std::is_member_function_pointer<TFunc>::value, std::function<TRet(TObject&, TArgs...) >,std::function<TRet(TArgs...)>> _func{};
             std::conditional_t<std::is_member_function_pointer<TFunc>::value,std::tuple<TObject, TArgs...>,std::tuple<TArgs...>> _args{};
-            std::promise<TRet> _retval;
+            std::promise<TRet> _retval{};
+            bool _invoked{false};
         };
 
         std::unique_ptr<innerAsyncInvokableBase> _inner;
