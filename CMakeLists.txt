@@ -9,7 +9,7 @@ project ("AsyncCallQueue")
 
 cmake_minimum_required (VERSION 3.8)  
 
-SET(CMAKE_BUILD_TYPE Debug)
+SET(CMAKE_BUILD_TYPE Release)
 SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
 #SET(CMAKE_CXX_COMPILER c++)
 

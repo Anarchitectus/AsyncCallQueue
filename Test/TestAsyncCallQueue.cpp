@@ -129,28 +129,25 @@ int main()
 
 
 
-//    AsyncCallQueue queue(20);
-//    //ret_copyable = queue.enqueue(&MoveOnly::mem_Copyable_void, (nc));
-//    ret_int = queue.enqueue(gbl_int_int,1);
-//    ret_int = queue.enqueue(gbl_int_int,1);
-//    ret_void = queue.enqueue(gbl_void_int_throw_if_0, 1);
-//    ret_void = queue.enqueue(gbl_void_int_throw_if_0, 0);
-//    //ret_int = queue.enqueue(gbl_int_int_ref, iarg2_ref);
-//    // retiarg2 = ret_int.get();
-//    //assert(retiarg2 == iarg2_ref);
-//    ret_int.get();
-//    //ret_int.get();
-//    try
-//    {
-//        ret_void.get();
-//    }
-//    catch (std::invalid_argument& e)
-//    {
-//        std::cout << e.what();
-//    }
-//
-//    //ret_copyable.get();
+    AsyncCallQueue aqueue(20);
+    aqueue.start();
+    //ret_copyable = queue.enqueue(&MoveOnly::mem_Copyable_void, (nc));
+    ret_int = aqueue.enqueue(gbl_int_int,1);
+    ret_int = aqueue.enqueue(gbl_int_int,1);
+    ret_void = aqueue.enqueue(gbl_void_int_throw_if_0, 1);
+    ret_void = aqueue.enqueue(gbl_void_int_throw_if_0, 0);
+    ret_int = aqueue.enqueue(gbl_int_int_ref, std::ref(iarg2_ref));
+    int retiarg2 = ret_int.get();
+    assert(retiarg2 == iarg2_ref);
 
+    try
+    {
+        ret_void.get();
+    }
+    catch (std::invalid_argument& e)
+    {
+        std::cout << e.what();
+    }
 
     /////////////////////////////////////////////////////////////   TEST    //////////////////////////////////////////////////////////////
 
@@ -193,6 +190,9 @@ int main()
     auto max_delay = *max_element(std::begin(queue_sum_delays), std::end(queue_sum_delays));
 
     /////////////////////////////////////////////////////////////   SUM TEST    //////////////////////////////////////////////////////////////
+
+    std::cout<<"BEGIN TEST 0 - SANITY SUM\n";
+
     std::vector<size_t> sumRef(queue_count);
     std::vector<std::future<size_t>> sumFutRet(queue_count);
 
@@ -201,7 +201,6 @@ int main()
     for(auto& queue: queues)
     {
         for(size_t delay : queue_delays[counter]) {
-           // std::cout<<std::to_string(delay)<<" "<<std::this_thread::get_id()<<std::endl;
             sumFutRet[counter] = queue.enqueue(gbl_size_t_size_t_sum,std::ref(sumRef[counter]), delay);
         }
         counter++;
@@ -240,7 +239,8 @@ int main()
     /////////////////////////////////////////////////////////////   BENCHMARK TEST    //////////////////////////////////////////////////////////////
 
 
-//    //The actual calls
+    std::cout<<"BEGIN TEST 1 - Benchmark\n";
+
     start = std::chrono::high_resolution_clock::now();
     counter = 0;
     for(auto& queue: queues)
@@ -261,14 +261,48 @@ int main()
     std::cout << "Waited Sync " << elapsedSync.count() << " ms\n";
     std::cout << "Expected " << max_delay << " ms\n";
 
+    std::cout<<"TEST 1 SUCCEEDED\n";
 
-    //The actual calls
+    /////////////////////////////////////////////////////////////   TENSION TEST    //////////////////////////////////////////////////////////////
 
+    std::cout<<"BEGIN TEST 2 - Mass concurrent access\n";
 
+    constexpr size_t call_concurrent_thread_count = 2000;
+    constexpr size_t concurrent_thread_count = 20;
+    std::array<std::thread,concurrent_thread_count> concurrent_threads;
 
+    long long accTension = 0;
 
+    AsyncCallQueue cqueue(queue_size);
 
+    cqueue.start();
 
+    auto lambdaAdd1 = [&cqueue,&accTension](long long add){
+        for(size_t it = 0 ; it < call_concurrent_thread_count;it++)
+            cqueue.enqueue(gbl_lli_lli_ref_lli_sum,std::ref(accTension), add);
+    };
+
+    //half of the threads +1 rest -1, should end with 0
+    for(size_t ind = 0 ; ind < concurrent_thread_count; ind++)
+    {
+            concurrent_threads[ind] = std::thread(lambdaAdd1,(ind < (concurrent_thread_count>>1)) ? -1 : 1);
+    }
+
+    for(size_t ind = 0 ; ind < concurrent_thread_count; ind++)
+    {
+        concurrent_threads[ind].join();
+    }
+
+    cqueue.sync();
+
+    if(accTension == 0)
+    {
+        std::cout<<"TEST 2 SUCCEEDED\n";
+    }
+    else
+    {
+        std::cout<<"TEST 2 FAILED val is "<<std::to_string(accTension)<< " instead of 0\n";
+    }
 
 
     return 0;

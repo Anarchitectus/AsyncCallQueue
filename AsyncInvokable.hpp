@@ -128,7 +128,7 @@ namespace arc
 
                 return true;
             }
-            
+
             std::conditional_t<std::is_member_function_pointer<TFunc>::value, std::function<TRet(typename std::decay<TObject&>::type, typename std::decay<TArgs>::type...) >,std::function<TRet(typename std::decay<TArgs>::type...)>> _func{};
             std::conditional_t<std::is_member_function_pointer<TFunc>::value,__decayed_tuple<TObject, TArgs...>,__decayed_tuple<TArgs...>> _args{};
             std::promise<TRet> _retval{};

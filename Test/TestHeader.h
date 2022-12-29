@@ -21,9 +21,9 @@ void gbl_void_const_copyable_rvalue_ref(const Copyable&& nc) { _message = _messa
 void gbl_void_MoveOnly(MoveOnly nc) { _message = _message; std::cout << _message << " gbl_void_MoveOnly" << std::endl; };
 
 void gbl_void_int_throw_if_0(int i) {
-    std::cout << _message << " gbl_void_int_throw_if_0" << std::endl;
+    std::cout << _message << " gbl_void_int_throw_if_0\n";
 	if (i == 0)
-		throw std::invalid_argument("gbl_void_int_throw_if_0 arg is equal to 0");
+		throw std::invalid_argument("gbl_void_int_throw_if_0 arg is equal to 0\n");
 };
 
 void gbl_void_int_sleep_for(const std::chrono::duration<double, std::milli>& time)
@@ -36,6 +36,14 @@ size_t gbl_size_t_size_t_sum(size_t& acc, size_t val)
     acc+= val;
     return acc;
 }
+
+long long gbl_lli_lli_ref_lli_sum(long long& acc, long long val)
+{
+    acc+= val;
+    return acc;
+}
+
+
 
 size_t gbl_size_t_size_t_ret( size_t val)
 {
