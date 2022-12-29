@@ -3,22 +3,29 @@
 
 #include "AsyncInvokable.hpp"
 #include "ConcurrentDeque.hpp"
-
+#include <iostream>
+#include <thread>
 
 namespace arc {
     class AsyncCallQueue {
     public:
         explicit AsyncCallQueue(size_t lim = std::numeric_limits<size_t>::max()) :
-                _exitRunner(false),
-                _concurrentDeque(lim),
-                _runner(&AsyncCallQueue::run, this) {};
+            _concurrentDeque(lim)
+            //,_runner (&AsyncCallQueue::run, this)
+        {
+        };
 
         ~AsyncCallQueue() {
-            sync();
-            _exitRunner = true;
-            sync();
-            _runner.join();
+            end();
         }
+
+        AsyncCallQueue(const AsyncCallQueue& o) = delete;
+
+        AsyncCallQueue& operator=(const AsyncCallQueue& o) = delete;
+
+        AsyncCallQueue(AsyncCallQueue&& o) noexcept = default;
+
+        AsyncCallQueue& operator=(AsyncCallQueue&& o) noexcept = default;
 
         template<typename TFunc, typename... TArgs, typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
         [[nodiscard]] std::future<typename std::invoke_result<TFunc, TArgs...>::type>
@@ -51,20 +58,49 @@ namespace arc {
 
         size_t maxSize(){ return _concurrentDeque.max_size();};
 
-    private:
+        void start()
+        {
+            if(!_runnerIsRunning) {
+                _runner = std::thread(&AsyncCallQueue::run, this);
+                _runnerIsRunning = true;
+            }
+        }
+
+
+    public:
+
+
+        void end()
+        {
+            if(!_runnerIsRunning)
+                return ;
+
+            sync();
+            _exitRunner = true;
+            if(!_exitedRunner)
+                sync();
+
+            if(_runner.joinable())
+                _runner.join();
+        }
 
         void run() {
             for (;;) {
-                AsyncInvokable elem{_concurrentDeque.pop()};
-                elem.invoke();
+                AsyncInvokable elem = _concurrentDeque.pop();
+
+                elem.invoke(); //it is important to invoke, it is used as a sync element
+
                 if (_exitRunner)
                 {
+                    _exitedRunner = true;
                     return;
                 }
             }
         }
 
-        bool _exitRunner;
+        volatile bool _runnerIsRunning{false};
+        volatile bool _exitRunner{false};
+        volatile bool _exitedRunner{false};
         ConcurrentDeque<AsyncInvokable> _concurrentDeque;
         std::thread _runner;
     };

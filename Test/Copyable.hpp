@@ -20,6 +20,7 @@ public:
 
     int static staticMember(int a) { std::cout << " static Copyable call " << std::to_string(a) << std::endl; return a; };
     void mem_void_void() { std::cout << _message << " mem_void_void" << std::endl; };
+    void mem_void_int_ref(int& a) { std::cout << _message << " mem_void_int_ref" << std::endl; };
     int mem_int_int(int a) { std::cout << _message << " mem_int_int" << std::endl; return a; };
     void mem_void_int(int a) { std::cout << _message << " mem_void_int" << std::endl; };
     void mem_void_int_const(int a) const { std::cout << _message << " mem_void_int_const" << std::endl; };
