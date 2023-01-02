@@ -1,34 +1,16 @@
 ﻿#include "../AsyncCallQueue.hpp"
 #include "TestHeader.h"
 #include <cassert>
-#include <iostream>
-#include <vector>
-#include <numeric>
-#include <thread>
 #include <functional>
-#include <algorithm>
-#include <vector>
+#include <numeric>
+
 using namespace arc;
-
-
-struct syn
-{
-    void f(){};
-};
 
 int main()
 {
 #ifdef NDEBUG
 
 #endif
-//    int var;
-//    auto lam =  [var](){};
-//    void (*syncTok)(){nullptr};
-//    std::function ft(syncTok);
-//    std::apply(syncTok,std::tuple<>{});
-//    std::apply( &syn::f,std::tuple<syn>{syn{}});
-//    std::apply(lam,std::tuple<>{});
-//    syncTok = lam;
 
     int iarg = 1;
     int iarg2 = 1;
@@ -40,10 +22,6 @@ int main()
     std::future<Copyable> ret_copyable;
     std::future<MoveOnly> ret_moveOnly;
 
-    size_t fdfsf = 5;
-
-    auto retz=  std::async(gbl_size_t_size_t_ret,fdfsf);
-
    AsyncInvokable f_gbl_void_int_ref{ ret_int,gbl_int_int_ref,std::ref(iarg2) };
 
    AsyncInvokable f_gbl_void_int_ref_moved(std::move(f_gbl_void_int_ref));
@@ -53,7 +31,6 @@ int main()
     f_gbl_void_int_ref.invoke();
 
     AsyncCallQueue aqueue_0(20);
-    //aqueue_0.run();
 
     ret_int = aqueue_0.enqueue(gbl_int_int,1);
     ret_int = aqueue_0.enqueue(gbl_int_int,2);
@@ -63,10 +40,7 @@ int main()
         AsyncCallQueue aqueue_0_moved(std::move(aqueue_0));
         aqueue_0_moved.run();
         aqueue_0_moved.sync();
-        std::cout << "move test";
     }
-
-    std::cout << "move test";
 
     //AsyncInvokable f_gbl_void_void{ ret_void,gbl_void_void }; f_gbl_void_void.invoke();
     //member func
@@ -172,7 +146,6 @@ int main()
 
     /////////////////////////////////////////////////////////////   TEST    //////////////////////////////////////////////////////////////
 
-
     /////////////////////////////////////////////////////////////   POPULATE DATA   /////////////////////////////////////////////////////
     //   std::srand(unsigned(std::time(nullptr)));
     size_t queue_count = 10;
@@ -267,7 +240,7 @@ int main()
     for(auto& queue: queues)
     {
         for(auto delay : queue_delays[counter])
-            queue.enqueue(gbl_void_int_sleep_for,std::chrono::duration<double, std::milli>(delay));
+            std::ignore = queue.enqueue(gbl_void_int_sleep_for,std::chrono::duration<double, std::milli>(delay));
         counter++;
     }
 
@@ -300,7 +273,7 @@ int main()
 
     auto lambdaAdd1 = [&cqueue,&accTension](long long add){
         for(size_t it = 0 ; it < call_concurrent_thread_count;it++)
-            cqueue.enqueue(gbl_lli_lli_ref_lli_sum,std::ref(accTension), add);
+            std::ignore = cqueue.enqueue(gbl_lli_lli_ref_lli_sum,std::ref(accTension), add);
     };
 
     //half of the threads +1 rest -1, should end with 0
@@ -324,7 +297,6 @@ int main()
     {
         std::cout<<"TEST 2 FAILED val is "<<std::to_string(accTension)<< " instead of 0\n";
     }
-
 
     return 0;
 }
