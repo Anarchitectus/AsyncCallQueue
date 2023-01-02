@@ -18,7 +18,7 @@ int gbl_int_int(int a)
 int gbl_int_ull(unsigned long long a)
 {
     std::cout << _message << " gbl_int_ull" << std::endl;
-    return a;
+    return (int)a;
 };
 int gbl_int_int_ref(int &a)
 {

@@ -3,6 +3,7 @@
 #include <cassert>
 #include <functional>
 #include <numeric>
+#include <array>
 
 using namespace arc;
 
@@ -174,8 +175,8 @@ int main()
     int counter = 0;
     for(auto& delays : queue_delays) {
         std::generate(delays.begin(), delays.end(),
-                      [max_time]() { return static_cast<double>(std::rand()) / RAND_MAX * max_time; });
-        queue_sum_delays[counter] = std::accumulate(delays.begin(),delays.end(),0);
+                      [max_time]() { return (size_t)((double)(std::rand()) / RAND_MAX * max_time); });
+        queue_sum_delays[counter] = std::accumulate(delays.begin(), delays.end(), (size_t)0);
 
 
         counter++;
