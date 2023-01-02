@@ -10,22 +10,37 @@ namespace arc {
     class AsyncCallQueue {
     public:
         explicit AsyncCallQueue(size_t lim = std::numeric_limits<size_t>::max()) :
-            _concurrentDeque(lim)
-            //,_runner (&AsyncCallQueue::run, this)
-        {
-        };
+            _concurrentDeque(lim),
+            _exit_sig_future(_exit_sig.get_future())
+        {};
 
         ~AsyncCallQueue() {
-            end();
+            terminate();
         }
 
-        AsyncCallQueue(const AsyncCallQueue& o) = delete;
+       AsyncCallQueue(const AsyncCallQueue& o) = delete;
 
-        AsyncCallQueue& operator=(const AsyncCallQueue& o) = delete;
+       AsyncCallQueue& operator=(const AsyncCallQueue& o) = delete;
 
-        AsyncCallQueue(AsyncCallQueue&& o) noexcept = default;
+        AsyncCallQueue(AsyncCallQueue&& other) noexcept
+        {
+            auto lock{ std::scoped_lock(other._mutex) };
+            _concurrentDeque = std::exchange(other._concurrentDeque, ConcurrentDeque<AsyncInvokable>{});
+            _exit_sig_future = std::exchange(other._exit_sig_future, std::future<void>{});
+            _exit_sig = std::exchange(other._exit_sig, std::promise<void>{});
+        }
 
-        AsyncCallQueue& operator=(AsyncCallQueue&& o) noexcept = default;
+        AsyncCallQueue& operator=(AsyncCallQueue&& other) noexcept
+        {
+            {
+                auto lock{ std::scoped_lock(_mutex, other._mutex) };
+                _concurrentDeque = std::exchange(other._concurrentDeque, ConcurrentDeque<AsyncInvokable>{});
+                _exit_sig_future = std::exchange(other._exit_sig_future, std::future<void>{});
+                _exit_sig = std::exchange(other._exit_sig, std::promise<void>{});
+            }
+
+            return *this;
+        }
 
         template<typename TFunc, typename... TArgs, typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
         [[nodiscard]] std::future<typename std::invoke_result<TFunc, TArgs...>::type>
@@ -54,54 +69,53 @@ namespace arc {
             }catch(...){}
         }
 
-        size_t size(){ return _concurrentDeque.size();};
+        [[nodiscard]] size_t size() const { return _concurrentDeque.size();};
 
-        size_t maxSize(){ return _concurrentDeque.max_size();};
+        [[nodiscard]] size_t maxSize() const{ return _concurrentDeque.max_size();};
 
-        void start()
+        void run()
         {
-            if(!_runnerIsRunning) {
-                _runner = std::thread(&AsyncCallQueue::run, this);
-                _runnerIsRunning = true;
-            }
-        }
-
-
-    public:
-
-
-        void end()
-        {
-            if(!_runnerIsRunning)
-                return ;
-
-            sync();
-            _exitRunner = true;
-            if(!_exitedRunner)
-                sync();
-
-            if(_runner.joinable())
-                _runner.join();
-        }
-
-        void run() {
-            for (;;) {
-                AsyncInvokable elem = _concurrentDeque.pop();
-
-                elem.invoke(); //it is important to invoke, it is used as a sync element
-
-                if (_exitRunner)
-                {
-                    _exitedRunner = true;
-                    return;
+            if (!_runnerIsRunning)
+            {
+                auto lock{ std::scoped_lock(_mutex) };
+                if (!_runnerIsRunning) {
+                    _runner = std::thread(&AsyncCallQueue::work, this);
+                    _runnerIsRunning = true;
                 }
             }
         }
 
-        volatile bool _runnerIsRunning{false};
-        volatile bool _exitRunner{false};
-        volatile bool _exitedRunner{false};
+
+    private:
+
+
+        void terminate()
+        {
+            {
+                auto lock{std::scoped_lock(_mutex)};
+                if (!_runnerIsRunning)
+                    return;
+            }
+
+            sync();
+            _exit_sig.set_value();
+            std::ignore = enqueue([](){}); //push another thread may be waiting, need to do another iteration
+            if(_runner.joinable())
+                _runner.join();
+        }
+
+        void work() {
+            while ( _exit_sig_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout)
+            {
+                _concurrentDeque.pop().invoke();
+            }
+        }
+
+        mutable std::mutex _mutex;
         ConcurrentDeque<AsyncInvokable> _concurrentDeque;
+        std::promise<void> _exit_sig;
+        std::future<void> _exit_sig_future;
+        bool _runnerIsRunning{false};
         std::thread _runner;
     };
 }

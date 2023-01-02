@@ -11,7 +11,7 @@ template<typename T>
 class ConcurrentDeque {
     public:
 
-    ConcurrentDeque() = default;
+    //ConcurrentDeque() = default;
 
     explicit ConcurrentDeque(size_t maxSize = std::numeric_limits<size_t>::max()) :_maxSize(maxSize){};
 

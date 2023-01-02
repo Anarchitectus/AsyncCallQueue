@@ -44,9 +44,30 @@ int main()
 
     auto retz=  std::async(gbl_size_t_size_t_ret,fdfsf);
 
-//   AsyncInvokable f_gbl_void_int_ref{ ret_int,gbl_int_int_ref,std::ref(iarg2) };
-//    f_gbl_void_int_ref.invoke();
-//    f_gbl_void_int_ref.invoke();
+   AsyncInvokable f_gbl_void_int_ref{ ret_int,gbl_int_int_ref,std::ref(iarg2) };
+
+   AsyncInvokable f_gbl_void_int_ref_moved(std::move(f_gbl_void_int_ref));
+    f_gbl_void_int_ref_moved.invoke();
+    int retmov = ret_int.get();
+    f_gbl_void_int_ref.invoke();
+    f_gbl_void_int_ref.invoke();
+
+    AsyncCallQueue aqueue_0(20);
+    //aqueue_0.run();
+
+    ret_int = aqueue_0.enqueue(gbl_int_int,1);
+    ret_int = aqueue_0.enqueue(gbl_int_int,2);
+    ret_int = aqueue_0.enqueue(gbl_int_int,3);
+
+    {
+        AsyncCallQueue aqueue_0_moved(std::move(aqueue_0));
+        aqueue_0_moved.run();
+        aqueue_0_moved.sync();
+        std::cout << "move test";
+    }
+
+    std::cout << "move test";
+
     //AsyncInvokable f_gbl_void_void{ ret_void,gbl_void_void }; f_gbl_void_void.invoke();
     //member func
 //    AsyncInvokable mem_void_void{ ret_void, &Copyable::mem_void_void,(c) };
@@ -130,7 +151,7 @@ int main()
 
 
     AsyncCallQueue aqueue(20);
-    aqueue.start();
+    aqueue.run();
     //ret_copyable = queue.enqueue(&MoveOnly::mem_Copyable_void, (nc));
     ret_int = aqueue.enqueue(gbl_int_int,1);
     ret_int = aqueue.enqueue(gbl_int_int,1);
@@ -168,7 +189,7 @@ int main()
 
     for (auto& q :queues )
     {
-        q.start();
+        q.run();
     }
 
 
@@ -275,7 +296,7 @@ int main()
 
     AsyncCallQueue cqueue(queue_size);
 
-    cqueue.start();
+    cqueue.run();
 
     auto lambdaAdd1 = [&cqueue,&accTension](long long add){
         for(size_t it = 0 ; it < call_concurrent_thread_count;it++)

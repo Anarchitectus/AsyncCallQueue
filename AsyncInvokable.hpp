@@ -40,9 +40,9 @@ namespace arc
 
         AsyncInvokable& operator=(const AsyncInvokable& other) = delete;
 
-        AsyncInvokable(AsyncInvokable&& o) = default;
+        AsyncInvokable(AsyncInvokable&& o) noexcept = default;
 
-        AsyncInvokable& operator=(AsyncInvokable&& other) = default;
+        AsyncInvokable& operator=(AsyncInvokable&& other) noexcept = default;
 
         template <typename TFunc, typename... TArgs, typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
         AsyncInvokable(std::future<typename std::invoke_result<TFunc, TArgs...>::type>& ret, TFunc&& func, TArgs&&... args)
@@ -65,10 +65,7 @@ namespace arc
         class NullFunctionCallException : public std::exception
         {
             public:
-            char * what () {
-                char* msg = (char*)"function pointer is nullptr";
-                return msg;
-            }
+            char * what () {return (char*)"function pointer is nullptr";}
         };
 
         template <typename TRet, typename TFunc, typename TObject, typename... TArgs>
