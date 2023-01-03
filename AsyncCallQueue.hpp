@@ -14,7 +14,7 @@ class AsyncCallQueue
 
     ~AsyncCallQueue()
     {
-        terminate();
+        stop();
     }
 
     AsyncCallQueue(const AsyncCallQueue &o) = delete;
@@ -27,6 +27,8 @@ class AsyncCallQueue
         _concurrentDeque = std::exchange(other._concurrentDeque, ConcurrentDeque<AsyncInvokable>{});
         _exit_sig_future = std::exchange(other._exit_sig_future, std::future<void>{});
         _exit_sig = std::exchange(other._exit_sig, std::promise<void>{});
+        _runnerIsRunning = std::exchange(other._runnerIsRunning, false);
+        _runner = std::exchange(other._runner, std::thread{});
     }
 
     AsyncCallQueue &operator=(AsyncCallQueue &&other) noexcept
@@ -36,6 +38,8 @@ class AsyncCallQueue
             _concurrentDeque = std::exchange(other._concurrentDeque, ConcurrentDeque<AsyncInvokable>{});
             _exit_sig_future = std::exchange(other._exit_sig_future, std::future<void>{});
             _exit_sig = std::exchange(other._exit_sig, std::promise<void>{});
+            _runnerIsRunning = std::exchange(other._runnerIsRunning, false);
+            _runner = std::exchange(other._runner, std::thread{});
         }
 
         return *this;
@@ -67,7 +71,7 @@ class AsyncCallQueue
     {
         try
         {
-            enqueue([]() {}).get();
+            enqueue([](){}).get();
         }
         catch (...)
         {
@@ -97,22 +101,25 @@ class AsyncCallQueue
         }
     }
 
-  private:
-    void terminate()
+    void stop()
     {
         {
             auto lock{std::scoped_lock(_mutex)};
             if (!_runnerIsRunning)
                 return;
-        }
 
-        sync();
-        _exit_sig.set_value();
-        std::ignore = enqueue([]() {}); // push another thread may be waiting, need to do another iteration
-        if (_runner.joinable())
-            _runner.join();
+            sync();
+            _exit_sig.set_value();
+            std::ignore = enqueue([]() {}); // push another. thread may be waiting for pop, need to do another iteration
+            if (_runner.joinable())
+                _runner.join();
+
+            _runnerIsRunning = false;
+        }
     }
 
+  private:
+    
     void work()
     {
         while (_exit_sig_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout)

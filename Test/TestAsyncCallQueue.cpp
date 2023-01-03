@@ -7,144 +7,248 @@
 
 using namespace arc;
 
-int main()
+void test_0()
 {
-#ifdef NDEBUG
-
-#endif
-
     int iarg = 1;
     int iarg2 = 1;
-    int& iarg2_ref = iarg2;
-    MoveOnly nc, nc2,nc3;
+    int &iarg2_ref = iarg2;
+    MoveOnly nc, nc2, nc3;
     Copyable c, c2, c3;
     std::future<void> ret_void;
     std::future<int> ret_int;
     std::future<Copyable> ret_copyable;
     std::future<MoveOnly> ret_moveOnly;
 
-   AsyncInvokable f_gbl_void_int_ref{ ret_int,gbl_int_int_ref,std::ref(iarg2) };
-
-   AsyncInvokable f_gbl_void_int_ref_moved(std::move(f_gbl_void_int_ref));
-    f_gbl_void_int_ref_moved.invoke();
-    int retmov = ret_int.get();
-    f_gbl_void_int_ref.invoke();
-    f_gbl_void_int_ref.invoke();
-
-    AsyncCallQueue aqueue_0(20);
-
-    ret_int = aqueue_0.enqueue(gbl_int_int,1);
-    ret_int = aqueue_0.enqueue(gbl_int_int,2);
-    ret_int = aqueue_0.enqueue(gbl_int_int,3);
-
-    {
-        AsyncCallQueue aqueue_0_moved(std::move(aqueue_0));
-        aqueue_0_moved.run();
-        aqueue_0_moved.sync();
-    }
-
-    //AsyncInvokable f_gbl_void_void{ ret_void,gbl_void_void }; f_gbl_void_void.invoke();
+    // member func
+    AsyncInvokable mem_void_void{ ret_void, &Copyable::mem_void_void,(c) };
+    mem_void_void.invoke();
+    AsyncInvokable mem_void_int_ref{ ret_void, &Copyable::mem_void_int_ref,std::ref(c),std::ref(iarg2) };
+    mem_void_void.invoke();    
+    AsyncInvokable mem_int_int_rvalue{ ret_int, &Copyable::mem_int_int,(c),1 }; 
+    mem_int_int_rvalue.invoke();
+    AsyncInvokable mem_int_int_lvalue{ ret_int, &Copyable::mem_int_int,(c),iarg }; 
+    mem_int_int_lvalue.invoke();
+    AsyncInvokable mem_void_int{ ret_void, &Copyable::mem_void_int,(c),iarg }; 
+    mem_void_int.invoke();
+    AsyncInvokable mem_void_int_const{ret_void, &Copyable::mem_void_int_const, (c), iarg};
+    mem_void_int_const.invoke();    
+    AsyncInvokable mem_void_Copyable_const{ ret_void, &Copyable::mem_void_copyable_const,(c),c };
+    mem_void_Copyable_const.invoke(); 
+    AsyncInvokable mem_void_const_Copyable_const{ ret_void,&Copyable::mem_void_const_copyable_const,(c),c };
+    mem_void_const_Copyable_const.invoke(); 
+    AsyncInvokable mem_void_copyable{ ret_void, &Copyable::mem_void_copyable,(c),c };
+    mem_void_copyable.invoke(); 
+    AsyncInvokable mem_void_const_copyable{ ret_void, &Copyable::mem_void_const_copyable,(c),c };
+    mem_void_const_copyable.invoke();    
+    AsyncInvokable mem_void_copyable_ref_const{ ret_void,&Copyable::mem_void_copyable_ref_const,std::cref(c),std::ref(c) };
+    mem_void_copyable_ref_const.invoke();
+    AsyncInvokable mem_void_const_copyable_ref_const{ ret_void, &Copyable::mem_void_const_copyable_ref_const,(c),c};
+    mem_void_const_copyable_ref_const.invoke();
+    AsyncInvokable mem_void_copyable_ref{ ret_void, &Copyable::mem_void_copyable_ref,(c),std::ref(c) };
+    mem_void_copyable_ref.invoke();
+    AsyncInvokable mem_void_const_copyable_ref{ ret_void, &Copyable::mem_void_const_copyable_ref,(c),c };
+    mem_void_const_copyable_ref.invoke();    
+    AsyncInvokable mem_void_copyable_rvalue_ref_const{ ret_void, &Copyable::mem_void_copyable_rvalue_ref_const,(c),std::move(c2) };
+    mem_void_copyable_rvalue_ref_const.invoke();
+    AsyncInvokable mem_void_const_copyable_rvalue_ref_const{ret_void, &Copyable::mem_void_const_copyable_rvalue_ref_const,(c),Copyable{} };
+    mem_void_const_copyable_rvalue_ref_const.invoke(); 
+    AsyncInvokable mem_void_copyable_rvalue_ref{ret_void, &Copyable::mem_void_copyable_rvalue_ref, (c), Copyable{}};
+    mem_void_copyable_rvalue_ref.invoke();
+    AsyncInvokable mem_void_const_copyable_rvalue_ref{ ret_void, &Copyable::mem_void_const_copyable_rvalue_ref,(c),Copyable{} };
+    mem_void_const_copyable_rvalue_ref.invoke();
+    AsyncInvokable mem_copyable_void{ ret_copyable, &Copyable::mem_copyable_void,(c) };
+    mem_copyable_void.invoke(); 
+    AsyncInvokable mem_copyable_void_const{ ret_copyable, &Copyable::mem_copyable_void_const,(c) }; 
+    mem_copyable_void_const.invoke();
+    
     //member func
-//    AsyncInvokable mem_void_void{ ret_void, &Copyable::mem_void_void,(c) };
-//    mem_void_void.invoke();
-//    AsyncInvokable mem_void_int_ref{ ret_void, &Copyable::mem_void_int_ref,std::ref(c),std::ref(iarg2) };
-//    mem_void_void.invoke();
-//
-//
-//    AsyncInvokable mem_int_int_rvalue{ ret_int, &Copyable::mem_int_int,(c),1 }; mem_int_int_rvalue.invoke();
-//    AsyncInvokable mem_int_int_lvalue{ ret_int, &Copyable::mem_int_int,(c),iarg }; mem_int_int_lvalue.invoke();
-//    AsyncInvokable mem_void_int{ ret_void, &Copyable::mem_void_int,(c),iarg }; mem_void_int.invoke();
-//    AsyncInvokable mem_void_int_const{ ret_void, &Copyable::mem_void_int_const,(c),iarg }; mem_void_int_const.invoke();
-//
-//    AsyncInvokable mem_void_Copyable_const{ ret_void, &Copyable::mem_void_copyable_const,(c),c }; mem_void_Copyable_const.invoke();
-//    AsyncInvokable mem_void_const_Copyable_const{ ret_void, &Copyable::mem_void_const_copyable_const,(c),c }; mem_void_const_Copyable_const.invoke();
-//    AsyncInvokable mem_void_copyable{ ret_void, &Copyable::mem_void_copyable,(c),c }; mem_void_copyable.invoke();
-//    AsyncInvokable mem_void_const_copyable{ ret_void, &Copyable::mem_void_const_copyable,(c),c }; mem_void_const_copyable.invoke();
-//
-//    AsyncInvokable mem_void_copyable_ref_const{ ret_void, &Copyable::mem_void_copyable_ref_const,std::cref(c),std::ref(c) }; mem_void_copyable_ref_const.invoke();
-//    AsyncInvokable mem_void_const_copyable_ref_const{ ret_void, &Copyable::mem_void_const_copyable_ref_const,(c),c }; mem_void_const_copyable_ref_const.invoke();
-//    AsyncInvokable mem_void_copyable_ref{ ret_void, &Copyable::mem_void_copyable_ref,(c),std::ref(c) }; mem_void_copyable_ref.invoke();
-//    AsyncInvokable mem_void_const_copyable_ref{ ret_void, &Copyable::mem_void_const_copyable_ref,(c),c }; mem_void_const_copyable_ref.invoke();
-//
-//    AsyncInvokable mem_void_copyable_rvalue_ref_const{ ret_void, &Copyable::mem_void_copyable_rvalue_ref_const,(c),std::move(c2) }; mem_void_copyable_rvalue_ref_const.invoke();
-//    AsyncInvokable mem_void_const_copyable_rvalue_ref_const{ ret_void, &Copyable::mem_void_const_copyable_rvalue_ref_const,(c),Copyable{} }; mem_void_const_copyable_rvalue_ref_const.invoke();
-//    AsyncInvokable mem_void_copyable_rvalue_ref{ ret_void, &Copyable::mem_void_copyable_rvalue_ref,(c),Copyable{} }; mem_void_copyable_rvalue_ref.invoke();
-//    AsyncInvokable mem_void_const_copyable_rvalue_ref{ ret_void, &Copyable::mem_void_const_copyable_rvalue_ref,(c),Copyable{} }; mem_void_const_copyable_rvalue_ref.invoke();
-//
-//    AsyncInvokable mem_copyable_void{ ret_copyable, &Copyable::mem_copyable_void,(c) }; mem_copyable_void.invoke();
-//    AsyncInvokable mem_copyable_void_const{ ret_copyable, &Copyable::mem_copyable_void_const,(c) }; mem_copyable_void_const.invoke();
-//
-////    //member func
-//    AsyncInvokable nonCopyable_mem_void_void{ ret_void, &MoveOnly::mem_void_void,std::ref(nc) }; nonCopyable_mem_void_void.invoke();
-//    AsyncInvokable nonCopyable_mem_int_int_rvalue{ ret_int, &MoveOnly::mem_int_int,std::ref(nc),1 }; nonCopyable_mem_int_int_rvalue.invoke();
-//    AsyncInvokable nonCopyable_mem_int_int_lvalue{ ret_int, &MoveOnly::mem_int_int,std::ref(nc),iarg }; nonCopyable_mem_int_int_lvalue.invoke();
-//    AsyncInvokable nonCopyable_mem_void_int{ ret_void, &MoveOnly::mem_void_int,std::ref(nc),iarg }; nonCopyable_mem_void_int.invoke();
-//    AsyncInvokable nonCopyable_mem_void_int_const{ ret_void, &MoveOnly::mem_void_int_const,std::ref(nc),iarg }; nonCopyable_mem_void_int_const.invoke();
-//
-//    AsyncInvokable nonCopyable_mem_void_Copyable_const{ ret_void, &MoveOnly::mem_void_Copyable_const,std::cref(nc),c }; nonCopyable_mem_void_Copyable_const.invoke();
-//    AsyncInvokable nonCopyable_mem_void_const_Copyable_const{ ret_void, &MoveOnly::mem_void_const_Copyable_const,std::cref(nc),c }; nonCopyable_mem_void_const_Copyable_const.invoke();
-//    AsyncInvokable nonCopyable_mem_void_Copyable{ ret_void, &MoveOnly::mem_void_Copyable,std::ref(nc),c }; nonCopyable_mem_void_Copyable.invoke();
-//    AsyncInvokable nonCopyable_mem_void_const_Copyable{ ret_void, &MoveOnly::mem_void_const_Copyable,std::ref(nc),c }; nonCopyable_mem_void_const_Copyable.invoke();
-//
-//    AsyncInvokable nonCopyable_mem_void_Copyable_ref_const{ ret_void, &MoveOnly::mem_void_Copyable_ref_const,std::cref(nc),std::ref(c) }; nonCopyable_mem_void_Copyable_ref_const.invoke();
-//    AsyncInvokable nonCopyable_mem_void_const_Copyable_ref_const{ ret_void, &MoveOnly::mem_void_const_Copyable_ref_const,std::cref(nc),c }; nonCopyable_mem_void_const_Copyable_ref_const.invoke();
-//    AsyncInvokable nonCopyable_mem_void_Copyable_ref{ ret_void, &MoveOnly::mem_void_Copyable_ref,std::ref(nc),std::ref(c) }; nonCopyable_mem_void_Copyable_ref.invoke();
-//    AsyncInvokable nonCopyable_mem_void_const_Copyable_ref{ ret_void, &MoveOnly::mem_void_const_Copyable_ref,std::ref(nc),c }; nonCopyable_mem_void_const_Copyable_ref.invoke();
-//
-//    AsyncInvokable nonCopyable_mem_void_Copyable_rvalue_ref_const{ ret_void, &MoveOnly::mem_void_Copyable_rvalue_ref_const,std::cref(nc),std::move(c3) }; nonCopyable_mem_void_Copyable_rvalue_ref_const.invoke();
-//    AsyncInvokable nonCopyable_mem_void_const_Copyable_rvalue_ref_const{ ret_void, &MoveOnly::mem_void_const_Copyable_rvalue_ref_const,std::cref(nc),Copyable{} }; nonCopyable_mem_void_const_Copyable_rvalue_ref_const.invoke();
-//    AsyncInvokable nonCopyable_mem_void_Copyable_rvalue_ref{ ret_void, &MoveOnly::mem_void_Copyable_rvalue_ref,std::ref(nc),Copyable{} }; nonCopyable_mem_void_Copyable_rvalue_ref.invoke();
-//    AsyncInvokable nonCopyable_mem_void_const_Copyable_rvalue_ref{ ret_void, &MoveOnly::mem_void_const_Copyable_rvalue_ref,std::ref(nc),Copyable{} }; nonCopyable_mem_void_const_Copyable_rvalue_ref.invoke();
-//
-//    AsyncInvokable nonCopyable_mem_Copyable_void{ ret_copyable, &MoveOnly::mem_Copyable_void,std::ref(nc) }; nonCopyable_mem_Copyable_void.invoke();
-//    AsyncInvokable nonCopyable_mem_Copyable_void_const{ ret_copyable, &MoveOnly::mem_Copyable_void_const,std::cref(nc) }; nonCopyable_mem_Copyable_void_const.invoke();
-//
-//    AsyncInvokable f_gbl_void_void{ ret_void,gbl_void_void }; f_gbl_void_void.invoke();
-//    AsyncInvokable f_gbl_void_int{ ret_void,gbl_void_int,iarg };
-//    f_gbl_void_int.invoke();
-//    AsyncInvokable f_gbl_void_int_ref{ ret_int,gbl_int_int_ref,std::ref(iarg2_ref) };
-//    f_gbl_void_int_ref.invoke();
-//    AsyncInvokable f_gbl_int_int{ ret_int,gbl_int_int,iarg }; f_gbl_int_int.invoke();
-    AsyncInvokable f_gbl_void_MoveOnly{ ret_void,gbl_void_MoveOnly,std::move(nc3) };
-   // f_gbl_void_MoveOnly.invoke();
-    //f_gbl_void_MoveOnly.invoke(); //double call check
+    AsyncInvokable nonCopyable_mem_void_void{ ret_void, &MoveOnly::mem_void_void,std::ref(nc) };
+    nonCopyable_mem_void_void.invoke(); 
+    AsyncInvokable nonCopyable_mem_int_int_rvalue{ ret_int, &MoveOnly::mem_int_int,std::ref(nc),1 }; 
+    nonCopyable_mem_int_int_rvalue.invoke();
+    AsyncInvokable nonCopyable_mem_int_int_lvalue{ ret_int, &MoveOnly::mem_int_int,std::ref(nc),iarg };
+    nonCopyable_mem_int_int_lvalue.invoke(); 
+    AsyncInvokable nonCopyable_mem_void_int{ ret_void, &MoveOnly::mem_void_int,std::ref(nc),iarg };
+    nonCopyable_mem_void_int.invoke(); 
+    AsyncInvokable nonCopyable_mem_void_int_const{ ret_void, &MoveOnly::mem_void_int_const,std::ref(nc),iarg };
+    nonCopyable_mem_void_int_const.invoke();  
+    AsyncInvokable nonCopyable_mem_void_Copyable_const{ ret_void, &MoveOnly::mem_void_Copyable_const,std::cref(nc),c }; 
+    nonCopyable_mem_void_Copyable_const.invoke();
+    AsyncInvokable nonCopyable_mem_void_const_Copyable_const{ ret_void, &MoveOnly::mem_void_const_Copyable_const,std::cref(nc),c };
+    nonCopyable_mem_void_const_Copyable_const.invoke();
+    AsyncInvokable nonCopyable_mem_void_Copyable{ ret_void, &MoveOnly::mem_void_Copyable,std::ref(nc),c }; 
+    nonCopyable_mem_void_Copyable.invoke();
+    AsyncInvokable nonCopyable_mem_void_const_Copyable{ ret_void, &MoveOnly::mem_void_const_Copyable,std::ref(nc),c };
+    nonCopyable_mem_void_const_Copyable.invoke();   
+    AsyncInvokable nonCopyable_mem_void_Copyable_ref_const{ ret_void,&MoveOnly::mem_void_Copyable_ref_const,std::cref(nc),std::ref(c) };
+    nonCopyable_mem_void_Copyable_ref_const.invoke();
+    AsyncInvokable nonCopyable_mem_void_const_Copyable_ref_const{ ret_void, &MoveOnly::mem_void_const_Copyable_ref_const,std::cref(nc),c };
+    nonCopyable_mem_void_const_Copyable_ref_const.invoke();
+    AsyncInvokable nonCopyable_mem_void_Copyable_ref{ret_void, &MoveOnly::mem_void_Copyable_ref,std::ref(nc),std::ref(c) };
+    nonCopyable_mem_void_Copyable_ref.invoke();
+    AsyncInvokable nonCopyable_mem_void_const_Copyable_ref{ ret_void, &MoveOnly::mem_void_const_Copyable_ref,std::ref(nc),c }; 
+    nonCopyable_mem_void_const_Copyable_ref.invoke(); 
+    AsyncInvokable nonCopyable_mem_void_Copyable_rvalue_ref_const{ ret_void, &MoveOnly::mem_void_Copyable_rvalue_ref_const,std::cref(nc),std::move(c3) };
+    nonCopyable_mem_void_Copyable_rvalue_ref_const.invoke(); 
+    AsyncInvokable nonCopyable_mem_void_const_Copyable_rvalue_ref_const{ ret_void, &MoveOnly::mem_void_const_Copyable_rvalue_ref_const,std::cref(nc),Copyable{} };
+    nonCopyable_mem_void_const_Copyable_rvalue_ref_const.invoke(); 
+    AsyncInvokable nonCopyable_mem_void_Copyable_rvalue_ref{ ret_void, &MoveOnly::mem_void_Copyable_rvalue_ref,std::ref(nc),Copyable{} };
+    nonCopyable_mem_void_Copyable_rvalue_ref.invoke(); 
+    AsyncInvokable nonCopyable_mem_void_const_Copyable_rvalue_ref{ ret_void, &MoveOnly::mem_void_const_Copyable_rvalue_ref,std::ref(nc),Copyable{} };
+    nonCopyable_mem_void_const_Copyable_rvalue_ref.invoke();    
+    AsyncInvokable nonCopyable_mem_Copyable_void{ ret_copyable, &MoveOnly::mem_Copyable_void,std::ref(nc) };
+    nonCopyable_mem_Copyable_void.invoke(); 
+    AsyncInvokable nonCopyable_mem_Copyable_void_const{ ret_copyable, &MoveOnly::mem_Copyable_void_const,std::cref(nc) };
+    nonCopyable_mem_Copyable_void_const.invoke();
+    
+    //global func
+    AsyncInvokable f_gbl_void_void{ret_void, gbl_void_void};
+    f_gbl_void_void.invoke();
+    AsyncInvokable f_gbl_void_int{ ret_void,gbl_void_int,iarg };
+    f_gbl_void_int.invoke();
+    AsyncInvokable f_gbl_void_int_ref{ ret_int,gbl_int_int_ref,std::ref(iarg2_ref) };
+    f_gbl_void_int_ref.invoke();
+    AsyncInvokable f_gbl_int_int{ ret_int,gbl_int_int,iarg };
+    f_gbl_int_int.invoke();
+    AsyncInvokable f_gbl_void_MoveOnly{ret_void, gbl_void_MoveOnly, std::move(nc3)};
+    f_gbl_void_MoveOnly.invoke();
+}
 
-   // gbl_void_MoveOnly(std::move(nc3));
+//double call 
+void test_1()
+{
+     int iarg = 1;
+     std::future<int> ret;
+     AsyncInvokable f_gbl_void_int{ret, gbl_int_int, iarg};
+     f_gbl_void_int.invoke();
+     f_gbl_void_int.invoke(); //shouldn't do anything
+     int retval = ret.get();
+     assert(retval == iarg);
+}
 
-    AsyncInvokable f_gbl_void_int_throw{ ret_void, gbl_void_int_throw_if_0,0 };
-    try { f_gbl_void_int_throw.invoke(); }
-    catch (std::invalid_argument& e) { std::cout << e.what(); }
-    int cap = 3;
-    int addlambda = 5;
-    AsyncInvokable  lambda_int_int{ ret_int ,[cap](int a) -> int {std::cout << "lambda_int_int " << std::to_string(a + cap) <<"\n";  return a+cap;},addlambda };
-    lambda_int_int.invoke();
-    assert(ret_int.get() == addlambda + cap);
-//    AsyncInvokable f_gbl_int_int{ ret_int,gbl_int_int,iarg };
-//    f_gbl_int_int.invoke();
-//    f_gbl_int_int.invoke();
+void test_2()
+{
+     std::future<void> ret_void;
+     AsyncInvokable f_gbl_void_int_throw{ret_void, gbl_void_int_throw_if_0, 0};
+     f_gbl_void_int_throw.invoke();
+     try
+     {
+         ret_void.get();   
+     }
+     catch (std::invalid_argument &e)
+     {
+         std::cout << e.what();
+         return;
+     }
+     assert(false && "failed to catch exception");
+}
 
+void test_3()
+{
+     int iarg = 1;
+     std::future<int> ret_int;
+     AsyncInvokable f_gbl_void_int_ref{ret_int, gbl_int_int_ref, std::ref(iarg)};
+     AsyncInvokable f_gbl_void_int_ref_moved(std::move(f_gbl_void_int_ref));
+     f_gbl_void_int_ref_moved.invoke();
+     int retmov = ret_int.get();
+     assert(retmov == iarg);
+}
 
+void test_4()
+{
+     std::future<int> ret_int;
+     int cap = 3;
+     int addlambda = 5;
+     AsyncInvokable lambda_int_int{ret_int,
+                                   [cap](int a) -> int {
+                                       std::cout << "lambda_int_int " << std::to_string(a + cap) << "\n";
+                                       return a + cap;
+                                   },
+                                   addlambda};
+     lambda_int_int.invoke();
+     int retval = ret_int.get();  
+     assert(retval == addlambda + cap);
+}
 
-    AsyncCallQueue aqueue(20);
-    aqueue.run();
-    //ret_copyable = queue.enqueue(&MoveOnly::mem_Copyable_void, (nc));
-    ret_int = aqueue.enqueue(gbl_int_int,1);
-    ret_int = aqueue.enqueue(gbl_int_int,1);
-    ret_void = aqueue.enqueue(gbl_void_int_throw_if_0, 1);
-    ret_void = aqueue.enqueue(gbl_void_int_throw_if_0, 0);
-    ret_int = aqueue.enqueue(gbl_int_int_ref, std::ref(iarg2_ref));
-    int retiarg2 = ret_int.get();
-    assert(retiarg2 == iarg2_ref);
+void test_10()
+{
+     std::future<int> ret_int;
+     std::future<void> ret_void;
+     int iarg2 = 1;
+     int &iarg2_ref = iarg2;
+     AsyncCallQueue aqueue(20);
+     aqueue.run();
+     ret_int = aqueue.enqueue(gbl_int_int, 1);
+     ret_int = aqueue.enqueue(gbl_int_int, 1);
+     ret_void = aqueue.enqueue(gbl_void_int_throw_if_0, 1);
+     ret_void = aqueue.enqueue(gbl_void_int_throw_if_0, 0);
+     ret_int = aqueue.enqueue(gbl_int_int_ref, std::ref(iarg2_ref));
+     int retiarg2 = ret_int.get();
+     assert(retiarg2 == iarg2_ref);
 
-    try
-    {
-        ret_void.get();
-    }
-    catch (std::invalid_argument& e)
-    {
-        std::cout << e.what();
-    }
+     try
+     {
+         ret_void.get();
+     }
+     catch (std::invalid_argument &e)
+     {
+         std::cout << e.what();
+         return;
+     }
 
+     assert(false && "failed to catch exception");
+}
+
+void test_11()
+{
+     std::future<int> ret_int;
+     AsyncCallQueue aqueue_0(20);
+
+     ret_int = aqueue_0.enqueue(gbl_int_int, 1);
+     ret_int = aqueue_0.enqueue(gbl_int_int, 2);
+     ret_int = aqueue_0.enqueue(gbl_int_int, 3);
+
+     {
+         AsyncCallQueue aqueue_0_moved(std::move(aqueue_0));
+         aqueue_0_moved.run();
+         aqueue_0_moved.sync();
+     }
+}
+
+void test_12()
+{
+     std::future<int> ret_int;
+     AsyncCallQueue aqueue_0(20);
+     aqueue_0.run();
+    
+     {
+         AsyncCallQueue aqueue_0_moved(std::move(aqueue_0));
+         ret_int = aqueue_0_moved.enqueue(gbl_int_int, 1);
+         ret_int = aqueue_0_moved.enqueue(gbl_int_int, 2);
+         ret_int = aqueue_0_moved.enqueue(gbl_int_int, 3);
+         aqueue_0_moved.run();
+         aqueue_0_moved.sync();
+     }
+}
+
+int main()
+{
+#ifdef NDEBUG
+     std::cout << "RUNNING TEST : RELEASE MODE\n";
+#else
+     std::cout << "RUNNING TEST : DEBUG MODE\n";
+#endif
+     //some test on invokable class
+     //test_0();
+     test_1();
+     test_2();
+     test_3();
+     test_4();
+
+     //some test on AsyncCallQueue class
+     test_10();
+     test_11();
+     //test_12();
     /////////////////////////////////////////////////////////////   TEST    //////////////////////////////////////////////////////////////
 
     /////////////////////////////////////////////////////////////   POPULATE DATA   /////////////////////////////////////////////////////
@@ -155,6 +259,8 @@ int main()
     size_t queue_size = 1000;
 
     std::vector<AsyncCallQueue> queues;//(queue_count);
+    std::vector<std::vector<size_t>> queue_delays(queue_count);
+    std::vector<size_t> queue_sum_delays(queue_count);
 
     for(size_t ind = 0; ind < queue_count;ind++)
     {
@@ -165,10 +271,6 @@ int main()
     {
         q.run();
     }
-
-
-    std::vector<std::vector<size_t>> queue_delays(queue_count);
-    std::vector<size_t> queue_sum_delays(queue_count);
 
     std::generate(queue_delays.begin(),queue_delays.end(),[call_count](){return std::vector<size_t>(call_count);});
 

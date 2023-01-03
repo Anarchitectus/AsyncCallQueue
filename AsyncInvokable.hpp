@@ -50,11 +50,10 @@ struct AsyncInvokable
 
     class NullFunctionCallException : public std::exception
     {
-      public:
-        char *what()
-        {
-            return (char *)"function pointer is nullptr";
-        }
+        public: 
+        
+        NullFunctionCallException() noexcept : exception("function pointer is nullptr"){};
+  
     };
 
     template <typename TRet, typename TFunc, typename TObject, typename... TArgs>
