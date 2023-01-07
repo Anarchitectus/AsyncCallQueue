@@ -3,7 +3,6 @@
 
 #include "AsyncInvokable.hpp"
 #include "ConcurrentDeque.hpp"
-#include <memory>
 
 namespace anar
 {
@@ -12,11 +11,11 @@ class AsyncCallQueue
 {
   public:
     explicit AsyncCallQueue(size_t lim = std::numeric_limits<size_t>::max())
-        : impl(std::make_unique<AsyncCallQueueImpl>(lim)){}
+        : _impl(std::make_unique<AsyncCallQueueImpl>(lim)){}
 
     ~AsyncCallQueue()
     {
-        if (impl != nullptr)
+        if (_impl != nullptr)
         stop();
     }
 
@@ -32,7 +31,7 @@ class AsyncCallQueue
               typename = std::enable_if_t<!std::is_member_function_pointer<TFunc>::value>>
     [[nodiscard]] std::future<typename std::invoke_result<TFunc, TArgs...>::type> enqueue(TFunc &&func, TArgs &&...args)
     {
-        return impl->enqueue(func, args...);
+        return _impl->enqueue(func, args...);
     };
 
     template <typename TMemberFunc, typename TObject, typename... TArgs,
@@ -40,32 +39,32 @@ class AsyncCallQueue
     [[nodiscard]] std::future<typename std::invoke_result<TMemberFunc, TObject, TArgs...>::type> enqueue(
         TMemberFunc &&func, TObject &&inst, TArgs &&...args)
     {
-        return impl->enqueue(func, inst, args...);
+        return _impl->enqueue(func, inst, args...);
     };
 
     void sync()
     {
-        impl->sync();
+        _impl->sync();
     }
 
     [[nodiscard]] size_t size() const
     {
-        return impl->size();
+        return _impl->size();
     };
 
     [[nodiscard]] size_t maxSize() const
     {
-        return impl->maxSize();
+        return _impl->maxSize();
     };
 
     void run()
     {
-        impl->run();
+        _impl->run();
     }
 
     void stop()
     {
-        impl->stop();
+        _impl->stop();
     }
 
   private:
@@ -188,7 +187,7 @@ class AsyncCallQueueImpl
         std::thread _runner;
     };
       
-    std::unique_ptr<AsyncCallQueueImpl> impl;
+    std::unique_ptr<AsyncCallQueueImpl> _impl;
 };
 
 } // namespace anar
