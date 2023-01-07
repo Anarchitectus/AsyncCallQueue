@@ -13,7 +13,7 @@ SET(CMAKE_BUILD_TYPE Debug)
 SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
 #SET(CMAKE_CXX_COMPILER c++)
 
-add_executable (TestAsyncCallQueue Test/TestAsyncCallQueue.cpp AsyncInvokable.hpp AsyncCallQueue.hpp)
+add_executable (TestAsyncCallQueue Test/TestAsyncCallQueue.cpp AsyncInvokable.hpp AsyncCallQueue.hpp ConcurrentDeque.hpp)
 IF (WIN32)
   # set stuff for windows
 ELSE()

@@ -1,10 +1,13 @@
-#ifndef CONCURRENT_DEQUEUE_HPP
-#define CONCURRENT_DEQUEUE_HPP
+#ifndef ANAR_CONCURRENT_DEQUEUE_HPP
+#define ANAR_CONCURRENT_DEQUEUE_HPP
 
 #include <condition_variable>
 #include <deque>
 #include <mutex>
 #include <optional>
+
+namespace anar
+{
 
 template <typename T> class ConcurrentDeque
 {
@@ -131,5 +134,6 @@ template <typename T> class ConcurrentDeque
     mutable std::mutex _mutex{};
     size_t _maxSize = std::numeric_limits<size_t>::max();
 };
+} // namespace anar
 
 #endif
