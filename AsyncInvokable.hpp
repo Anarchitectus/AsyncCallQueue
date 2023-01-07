@@ -52,8 +52,12 @@ struct AsyncInvokable
     {
         public: 
         
-        NullFunctionCallException() noexcept : exception("function pointer is nullptr"){};
-  
+        NullFunctionCallException() noexcept = default;
+
+        [[nodiscard]] const char* what() const noexcept override
+        {
+            return "function pointer is nullptr";
+        }
     };
 
     template <typename TRet, typename TFunc, typename TObject, typename... TArgs>
