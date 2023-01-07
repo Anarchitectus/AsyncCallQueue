@@ -177,7 +177,7 @@ void test_10()
      int iarg2 = 1;
      int &iarg2_ref = iarg2;
      AsyncCallQueue aqueue(20);
-     aqueue.run();
+     aqueue.start();
      ret_int = aqueue.enqueue(gbl_int_int, 1);
      ret_int = aqueue.enqueue(gbl_int_int, 1);
      ret_void = aqueue.enqueue(gbl_void_int_throw_if_0, 1);
@@ -210,7 +210,7 @@ void test_11()
 
      {
          AsyncCallQueue aqueue_0_moved(std::move(aqueue_0));
-         aqueue_0_moved.run();
+         aqueue_0_moved.start();
          aqueue_0_moved.sync();
      }
 }
@@ -219,14 +219,14 @@ void test_12()
 {
      std::future<int> ret_int;
      AsyncCallQueue aqueue_0(20);
-     aqueue_0.run();
+     aqueue_0.start();
     
      {
          AsyncCallQueue aqueue_0_moved(std::move(aqueue_0));
          ret_int = aqueue_0_moved.enqueue(gbl_int_int, 1);
          ret_int = aqueue_0_moved.enqueue(gbl_int_int, 2);
          ret_int = aqueue_0_moved.enqueue(gbl_int_int, 3);
-         aqueue_0_moved.run();
+         aqueue_0_moved.start();
          aqueue_0_moved.sync();
      }
 }
@@ -269,7 +269,7 @@ int main()
 
     for (auto& q :queues )
     {
-        q.run();
+        q.start();
     }
 
     std::generate(queue_delays.begin(),queue_delays.end(),[call_count](){return std::vector<size_t>(call_count);});
@@ -372,7 +372,7 @@ int main()
 
     AsyncCallQueue cqueue(queue_size);
 
-    cqueue.run();
+    cqueue.start();
 
     auto lambdaAdd1 = [&cqueue,&accTension](long long add){
         for(size_t it = 0 ; it < call_concurrent_thread_count;it++)

@@ -57,9 +57,9 @@ class AsyncCallQueue
         return _impl->maxSize();
     };
 
-    void run()
+    void start()
     {
-        _impl->run();
+        _impl->start();
     }
 
     void stop()
@@ -76,7 +76,7 @@ class AsyncCallQueueImpl
         explicit AsyncCallQueueImpl(size_t lim = std::numeric_limits<size_t>::max())
             : _concurrentDeque(lim), 
             //_exit_sig_future(_exit_sig.get_future()),
-            _exit_flag(false)
+            _exitFlag(false)
         {};
 
         ~AsyncCallQueueImpl()
@@ -136,7 +136,7 @@ class AsyncCallQueueImpl
             return _concurrentDeque.max_size();
         };
 
-        void run()
+        void start()
         {
             if (!_runnerIsRunning)
             {
@@ -158,7 +158,7 @@ class AsyncCallQueueImpl
 
                 sync();
                 //_exit_sig.set_value();
-                _exit_flag.store(true);
+                _exitFlag.store(true);
                 // push another. thread may be waiting for pop, need to do another iteration
                 std::ignore = enqueue([]() {}); 
                 if (_runner.joinable())
@@ -172,7 +172,7 @@ class AsyncCallQueueImpl
         void work()
         {
             //while (_exit_sig_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::timeout)
-            while (!_exit_flag.load())
+            while (!_exitFlag.load())
             {
                 _concurrentDeque.pop().invoke();
             }
@@ -182,7 +182,7 @@ class AsyncCallQueueImpl
         ConcurrentDeque<AsyncInvokable> _concurrentDeque;
         //std::promise<void> _exit_sig;
         //std::future<void> _exit_sig_future;
-        std::atomic_bool _exit_flag;
+        std::atomic_bool _exitFlag;
         bool _runnerIsRunning{false};
         std::thread _runner;
     };

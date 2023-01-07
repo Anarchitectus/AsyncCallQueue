@@ -2,6 +2,7 @@
 #define ANAR_ASYNC_INVOKABLE_H
 
 #include <future>
+#include <type_traits>
 
 namespace anar
 {
